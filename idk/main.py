@@ -1,17 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
 
-def login():
-    username = email_label.get()
-    password = password_label.get()
-
-    if username
-
-
-
-
-
-
 # Create the main window
 window = tk.Tk()
 window.title("Arisu Inventory System")
@@ -28,10 +17,10 @@ logo_label = tk.Label(logo_frame, text="ARISU INVENTORY SYSTEM", font=("Arial", 
 logo_label.pack(pady=20)
 
 # Create the email field
-username = tk.Label(window, text="Email:", font=("Arial", 14), bg="#C0D6E4")
+username = tk.Label(window, text="Username:", font=("Arial", 14), bg="#C0D6E4")
 username.pack(pady=10)
 username_entry = tk.Entry(window, font=("Arial", 14), width=30)
-email_entry.pack(pady=10)
+username_entry.pack(pady=10)
 
 # Create the password field
 password_label = tk.Label(window, text="Password:", font=("Arial", 14), bg="#C0D6E4")
