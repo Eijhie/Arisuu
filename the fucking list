@@ -1,0 +1,239 @@
+import tkinter as tk
+from tkinter import ttk
+import sqlite3
+from tkinter import messagebox
+
+# Create a database connection
+conn = sqlite3.connect('grocery_inventory.db')
+c = conn.cursor()
+
+# Create the table if it doesn't exist
+c.execute('''CREATE TABLE IF NOT EXISTS groceries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    category TEXT NOT NULL,
+    quantity INTEGER NOT NULL,
+    unit TEXT NOT NULL,
+    price REAL NOT NULL
+)''')
+conn.commit()
+
+# Function to add a new grocery item
+def add_grocery():
+    def submit_grocery():
+        name = name_entry.get()
+        category = category_entry.get()
+        quantity = quantity_entry.get()
+        unit = unit_var.get()
+        price = price_entry.get()
+
+        if not name or not category or not quantity or not unit or not price:
+            error_label.config(text="Please fill in all fields.")
+            return
+
+        try:
+            quantity = int(quantity)
+            price = float(price)
+        except ValueError:
+            error_label.config(text="Quantity and Price must be numbers.")
+            return
+
+        # Insert the new grocery item into the database
+        c.execute("INSERT INTO groceries (name, category, quantity, unit, price) VALUES (?, ?, ?, ?, ?)",
+                  (name, category, quantity, unit, price))
+        conn.commit()
+
+        # Clear the entry fields
+        name_entry.delete(0, tk.END)
+        category_entry.delete(0, tk.END)
+        quantity_entry.delete(0, tk.END)
+        unit_var.set("pcs")
+        price_entry.delete(0, tk.END)
+
+        # Update the grocery list
+        update_grocery_list()
+
+        # Display success message
+        error_label.config(text="Grocery item added successfully.")
+
+    # Create the add grocery window
+    add_window = tk.Toplevel(root)
+    add_window.title("Add Grocery Item")
+
+    # Labels and entry fields
+    name_label = tk.Label(add_window, text="Name:")
+    name_label.grid(row=0, column=0, padx=5, pady=5)
+    name_entry = tk.Entry(add_window)
+    name_entry.grid(row=0, column=1, padx=5, pady=5)
+
+    category_label = tk.Label(add_window, text="Category:")
+    category_label.grid(row=1, column=0, padx=5, pady=5)
+    category_entry = tk.Entry(add_window)
+    category_entry.grid(row=1, column=1, padx=5, pady=5)
+
+    quantity_label = tk.Label(add_window, text="Quantity:")
+    quantity_label.grid(row=2, column=0, padx=5, pady=5)
+    quantity_entry = tk.Entry(add_window)
+    quantity_entry.grid(row=2, column=1, padx=5, pady=5)
+
+    unit_label = tk.Label(add_window, text="Unit:")
+    unit_label.grid(row=3, column=0, padx=5, pady=5)
+    unit_var = tk.StringVar(add_window)
+    unit_var.set("pcs")
+    unit_options = ["pcs", "kg", "g", "l", "ml"]
+    unit_dropdown = ttk.Combobox(add_window, textvariable=unit_var, values=unit_options)
+    unit_dropdown.grid(row=3, column=1, padx=5, pady=5)
+
+    price_label = tk.Label(add_window, text="Price:")
+    price_label.grid(row=4, column=0, padx=5, pady=5)
+    price_entry = tk.Entry(add_window)
+    price_entry.grid(row=4, column=1, padx=5, pady=5)
+
+    # Submit button
+    submit_button = tk.Button(add_window, text="Submit", command=submit_grocery)
+    submit_button.grid(row=5, column=0, columnspan=2, padx=5, pady=5)
+
+    # Error label
+    error_label = tk.Label(add_window, text="", fg="red")
+    error_label.grid(row=6, column=0, columnspan=2, padx=5, pady=5)
+
+# Function to update the grocery list
+def update_grocery_list():
+    grocery_list.delete(*grocery_list.get_children())
+    c.execute("SELECT * FROM groceries")
+    groceries = c.fetchall()
+    for grocery in groceries:
+        grocery_list.insert('', tk.END, values=grocery)
+
+# Function to edit an existing grocery item
+def edit_grocery():
+    selected_item = grocery_list.selection()
+    if selected_item:
+        grocery_id = grocery_list.item(selected_item[0])['values'][0]
+
+        def save_changes():
+            name = name_entry.get()
+            category = category_entry.get()
+            quantity = quantity_entry.get()
+            unit = unit_var.get()
+            price = price_entry.get()
+
+            if not name or not category or not quantity or not unit or not price:
+                error_label.config(text="Please fill in all fields.")
+                return
+
+            try:
+                quantity = int(quantity)
+                price = float(price)
+            except ValueError:
+                error_label.config(text="Quantity and Price must be numbers.")
+                return
+
+            # Update the grocery item in the database
+            c.execute("UPDATE groceries SET name = ?, category = ?, quantity = ?, unit = ?, price = ? WHERE id = ?",
+                      (name, category, quantity, unit, price, grocery_id))
+            conn.commit()
+
+            # Update the grocery list
+            update_grocery_list()
+
+            # Close the edit window
+            edit_window.destroy()
+
+        # Create the edit grocery window
+        edit_window = tk.Toplevel(root)
+        edit_window.title("Edit Grocery Item")
+
+        # Get grocery details from the database
+        c.execute("SELECT * FROM groceries WHERE id = ?", (grocery_id,))
+        grocery = c.fetchone()
+
+        # Labels and entry fields
+        name_label = tk.Label(edit_window, text="Name:")
+        name_label.grid(row=0, column=0, padx=5, pady=5)
+        name_entry = tk.Entry(edit_window)
+        name_entry.insert(0, grocery[1])
+        name_entry.grid(row=0, column=1, padx=5, pady=5)
+
+        category_label = tk.Label(edit_window, text="Category:")
+        category_label.grid(row=1, column=0, padx=5, pady=5)
+        category_entry = tk.Entry(edit_window)
+        category_entry.insert(0, grocery[2])
+        category_entry.grid(row=1, column=1, padx=5, pady=5)
+
+        quantity_label = tk.Label(edit_window, text="Quantity:")
+        quantity_label.grid(row=2, column=0, padx=5, pady=5)
+        quantity_entry = tk.Entry(edit_window)
+        quantity_entry.insert(0, grocery[3])
+        quantity_entry.grid(row=2, column=1, padx=5, pady=5)
+
+        unit_label = tk.Label(edit_window, text="Unit:")
+        unit_label.grid(row=3, column=0, padx=5, pady=5)
+        unit_var = tk.StringVar(edit_window)
+        unit_var.set(grocery[4])
+        unit_options = ["pcs", "kg", "g", "l", "ml"]
+        unit_dropdown = ttk.Combobox(edit_window, textvariable=unit_var, values=unit_options)
+        unit_dropdown.grid(row=3, column=1, padx=5, pady=5)
+
+        price_label = tk.Label(edit_window, text="Price:")
+        price_label.grid(row=4, column=0, padx=5, pady=5)
+        price_entry = tk.Entry(edit_window)
+        price_entry.insert(0, grocery[5])
+        price_entry.grid(row=4, column=1, padx=5, pady=5)
+
+        # Save button
+        save_button = tk.Button(edit_window, text="Save Changes", command=save_changes)
+        save_button.grid(row=5, column=0, columnspan=2, padx=5, pady=5)
+
+        # Error label
+        error_label = tk.Label(edit_window, text="", fg="red")
+        error_label.grid(row=6, column=0, columnspan=2, padx=5, pady=5)
+
+# Function to delete a grocery item
+def delete_grocery():
+    selected_item = grocery_list.selection()
+    if selected_item:
+        grocery_id = grocery_list.item(selected_item[0])['values'][0]
+        if tk.messagebox.askyesno("Delete Grocery Item", "Are you sure you want to delete this item?"):
+            # Delete the grocery item from the database
+            c.execute("DELETE FROM groceries WHERE id = ?", (grocery_id,))
+            conn.commit()
+
+            # Update the grocery list
+            update_grocery_list()
+
+# Create the main window
+root = tk.Tk()
+root.title("Grocery Inventory")
+
+# Create a frame for the background
+background_frame = tk.Frame(root, bg="#97bcc7") # Set background color
+background_frame.pack(fill=tk.BOTH, expand=True)
+
+# Create the grocery list inside the frame
+grocery_list = ttk.Treeview(background_frame, columns=("ID", "Name", "Category", "Quantity", "Unit", "Price"),
+                           show="headings")
+grocery_list.heading("ID", text="ID")
+grocery_list.heading("Name", text="Name")
+grocery_list.heading("Category", text="Category")
+grocery_list.heading("Quantity", text="Quantity")
+grocery_list.heading("Unit", text="Unit")
+grocery_list.heading("Price", text="Price")
+grocery_list.pack(fill=tk.BOTH, expand=True)
+
+# Create the buttons inside the frame
+add_button = tk.Button(background_frame, text="Add Grocery Item", command=add_grocery)
+add_button.pack(side=tk.LEFT, padx=5, pady=5)
+edit_button = tk.Button(background_frame, text="Edit Grocery Item", command=edit_grocery)
+edit_button.pack(side=tk.LEFT, padx=5, pady=5)
+delete_button = tk.Button(background_frame, text="Delete Grocery Item", command=delete_grocery)
+delete_button.pack(side=tk.LEFT, padx=5, pady=5)
+
+# Update the grocery list initially
+update_grocery_list()
+
+# Start the main event loop
+root.mainloop()
+
+# Close the database connection
+conn.close()
