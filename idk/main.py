@@ -32,9 +32,10 @@ password_entry.pack(pady=10)
 login_button = tk.Button(window, text="Log In", font=("Arial", 14), command=lambda: print("Login button clicked!"))
 login_button.pack(pady=10)
 
-# Create the "Dont have an account" link
-create_account_label = tk.Label(window, text="Dont have an account", font=("Arial", 12), bg="#C0D6E4")
-create_account_label.pack(pady=10)
+# Create the login button
+sign_button = tk.Button(window, text="Sign up", font=("Arial", 14), command=lambda: print("Temporary Sign up"))
+sign_button.pack(pady=10)
+
 
 # Start the main loop
 window.mainloop()
